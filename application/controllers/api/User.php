@@ -121,23 +121,23 @@ class User extends REST_Controller{
         if($data != FALSE){
             if($this->UserModel->is_email_exists($data->email)){
             $result = $this->UserModel->delete_user($data->_id);
-            if($result['nRemoved'] > 0){
+            if($result->getDeletedCount() > 0){
                 $this->response(array(
                     "status"=>1,
                     "message"=>"User deleted successfully",
                     ),parent::HTTP_OK);
             }else{
+            $this->response(array(
+                "status"=>0,
+                "message"=>"Cannot Delete User."
+            ), parent::HTTP_NOT_FOUND);
+        }
+        }else{
                 $this->response(array(
                     "status"=>0,
                     "message"=>"Cannot Find User."
                 ), parent::HTTP_NOT_FOUND);
             }
-        }
-        }else{
-            $this->response(array(
-                "status"=>0,
-                "message"=>"Cannot Delete User."
-            ), parent::HTTP_NOT_FOUND);
         }
         
     }
@@ -160,7 +160,7 @@ class User extends REST_Controller{
         if($this->UserModel->is_email_exists($data->email)){
             $newdata = json_decode(file_get_contents("php://input"));
             $result = $this->UserModel->update_user($newdata,$data->_id);
-            if($result['nModified'] > 0){
+            if($result->getModifiedCount() > 0 || $result->getMatchedCount()){
                 $this->response(array(
                     "status"=>1,
                     "message"=>"User details updated successfully",
