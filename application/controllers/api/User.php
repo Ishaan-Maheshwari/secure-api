@@ -1,4 +1,4 @@
-<?php 
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
 require APPPATH."libraries/REST_Controller.php";
 
@@ -14,6 +14,7 @@ class User extends REST_Controller{
             "authorization",
             "jwt"
         ));
+        $this->load->library('queue');
     }
 
      //validate token method
@@ -54,6 +55,10 @@ class User extends REST_Controller{
                 "password" => password_hash($data->password, PASSWORD_DEFAULT)
             );
 
+            //pushing to rabbitMQ
+            $this->queue->push('hello',array('Register Request',$user_data), $route = 'hello');
+            //pushed to rabbitMQ
+
             if($this->UserModel->set_user($user_data) != null){
                 $this->response(array(
                     "status" => 1,
@@ -79,7 +84,9 @@ class User extends REST_Controller{
         $data = json_decode(file_get_contents("php://input"));
 
         if(isset($data->email) && isset($data->password)){
-            
+            //Pushing to rabbitMQ
+            $this->queue->push('hello',array('Login Request',$data), $route = 'hello');
+
             $email = $data->email;
             $password = $data->password;
             $user_data = $this->UserModel->is_email_exists($email);
@@ -116,8 +123,11 @@ class User extends REST_Controller{
     }
 
     //update user details
-    public function delete_get(){
+    public function delete_post(){
         $data = $this->user_details();
+        //Pushing to rabbitMQ
+        $this->queue->push('hello',array('Delete Request',$data), $route = 'hello');
+            
         if($data != FALSE){
             if($this->UserModel->is_email_exists($data->email)){
             $result = $this->UserModel->delete_user($data->_id);
@@ -144,6 +154,9 @@ class User extends REST_Controller{
 
     public function details_get(){
         $data = $this->user_details();
+        //Pushing to rabbitMQ
+        $this->queue->push('hello',array('Details Request',$data), $route = 'hello');
+            
         unset($data->password);
         if( $data != FALSE){
             $this->response(array(
@@ -157,6 +170,9 @@ class User extends REST_Controller{
 
     public function update_post(){
         $data = $this->user_details();
+        //Pushing to rabbitMQ
+        $this->queue->push('hello',array('Update Request',$data), $route = 'hello');
+            
         if($this->UserModel->is_email_exists($data->email)){
             $newdata = json_decode(file_get_contents("php://input"));
             $result = $this->UserModel->update_user($newdata,$data->_id);
